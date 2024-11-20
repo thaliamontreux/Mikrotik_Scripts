@@ -1,3 +1,8 @@
+#This Script searches DHCP Leases and searches for machines with a ip address specified by "Target Subnet" variable and
+#if they are not added to the kid control feature it will auto add the device. You can set this script to run every 10 minutes
+#or even sooner sequential runs. I run this script every 2 minutes. This prevents devices with the random mac address feature
+#from circumventing security and forcing them to turn it off. 
+#
 # Define the target subnet
 :local targetSubnet "192.168.99.0/24";
 
