@@ -1,0 +1,28 @@
+# Define the target subnet
+:local targetSubnet "192.168.99.0/24";
+
+# Iterate through all DHCP leases
+:foreach lease in=[/ip dhcp-server lease find] do={
+
+    # Get the IP address of the current lease
+    :local ip [/ip dhcp-server lease get $lease address];
+
+    # Check if the IP falls within the target subnet
+    :if ($ip in $targetSubnet) do={
+
+        # Fetch additional details
+        :local mac [/ip dhcp-server lease get $lease mac-address];
+        :local hostName [/ip dhcp-server lease get $lease host-name];
+
+        # Check if the device's MAC address is assigned to a Kid-Control user
+        :local assignedUser [/ip kid-control device find mac-address=$mac];
+        
+        # Log the device details and Kid-Control assignment status
+        :if ([:len $assignedUser] > 0) do={
+            #:log info "Device in $targetSubnet: IP=$ip, MAC=$mac, Hostname=$hostName, Assigned to Kid-Control user.";
+        } else={
+            :log info "Device in $targetSubnet: IP=$ip, MAC=$mac, Hostname=$hostName, NOT assigned to a Kid-Control user.";
+            /ip kid-control device add user=UnknownDevice mac-address=$mac;
+        }
+    }
+}
