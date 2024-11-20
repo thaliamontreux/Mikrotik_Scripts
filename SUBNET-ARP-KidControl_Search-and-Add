@@ -1,0 +1,39 @@
+# This script searches a subnet defined and looks for devices not assigned to the Kid-Control feature and auto adds them to
+# a user named "UnknownDevice" 
+#
+# Define the target subnet prefix
+:local targetSubnetPrefix "192.168.99";
+:local kidControlUser "UnknownDevice";  # Define the user for unassigned devices
+
+# Loop through the ARP table to check devices in the target subnet
+:foreach arpEntry in=[/ip arp find] do={
+
+    # Get the IP address and MAC address from the ARP table entry
+    :local ipAddress [/ip arp get $arpEntry address];
+    :local macAddress [/ip arp get $arpEntry mac-address];
+
+    # Check if the IP address matches the subnet prefix "192.168.99"
+    :if ([:find $ipAddress $targetSubnetPrefix] = 0) do={
+
+        # Check if the IP address has a DHCP lease
+        :local dhcpLease [/ip dhcp-server lease find address=$ipAddress];
+
+        # If the IP address has a DHCP lease, log it as assigned
+        :if ([:len $dhcpLease] > 0) do={
+            #:log info ("Assigned device: IP=" . $ipAddress . ", MAC=" . $macAddress);
+        } else={
+            # If the IP address does not have a DHCP lease, log it as unassigned
+            :log info ("Unassigned device: IP=" . $ipAddress . ", MAC=" . $macAddress);
+
+            # Check if the MAC address is assigned to a Kid Control user
+            :local userCheck [/interface bridge host find where mac-address=$macAddress];
+
+            # If the MAC address is not already assigned to a user, add it to "UnknownDevice"
+            :if ([:len $userCheck] = 0) do={
+                # Add the unassigned device to Kid Control under the "UnknownDevice" user
+                :log info ("Assigning unassigned device to Kid Control user: " . $kidControlUser);
+                /ip kid-control device add user=UnknownDevice mac-address=$macAddress;
+            }
+        }
+    }
+}
